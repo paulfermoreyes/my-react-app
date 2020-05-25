@@ -4,6 +4,7 @@ orbs:
   gradle: circleci/gradle@2.1.0
 
 workflows:
-  gradle_test:
+  build_react_app:
     jobs:
-      - gradle/test
+      - gradle/run:
+          command: yarn_build
