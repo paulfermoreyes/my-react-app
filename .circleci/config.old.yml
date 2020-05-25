@@ -1,0 +1,92 @@
+version: 2
+jobs:
+  test:
+    working_directory: ~/project
+    docker:
+      - image: circleci/node:10.13.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: yarn-deps-{{ checksum "yarn.lock" }}
+      - run:
+          name: Install dependencies
+          command: |
+            sh ci_tasks/comment_to_pr.sh "Installing dependencies with yarn"
+            yarn install --frozen-lockfile
+      - save_cache:
+          paths:
+            - ~/.cache/yarn
+          key: yarn-deps-{{ checksum "yarn.lock" }}
+      - run:
+          name: Run tests and store coverage
+          command: yarn test && yarn test:coverage && ls -l
+      - store_artifacts:
+          path: tests
+
+  build_app:
+    working_directory: ~/project
+    docker:
+      - image: circleci/node:10.13.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: yarn-deps-{{ checksum "yarn.lock" }}
+      - run:
+          name: Install dependencies
+          command: |
+            sh ci_tasks/comment_to_pr.sh "Installing dependencies with yarn"
+            yarn install --frozen-lockfile
+      - save_cache:
+          paths:
+            - ~/.cache/yarn
+          key: yarn-deps-{{ checksum "yarn.lock" }}
+      - run:
+          name: Build project
+          command: yarn build
+      - store_artifacts:
+          path: build
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - build
+
+  build_storybook:
+    working_directory: ~/project
+    docker:
+      - image: circleci/node:10.13.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: yarn-deps-{{ checksum "yarn.lock" }}
+      - run:
+          name: Install dependencies
+          command: |
+            sh ci_tasks/comment_to_pr.sh "Installing dependencies with yarn"
+            yarn install --frozen-lockfile
+      - save_cache:
+          paths:
+            - ~/.cache/yarn
+          key: yarn-deps-{{ checksum "yarn.lock" }}
+      - run:
+          name: Build project
+          command: yarn build-storybook
+      - store_artifacts:
+          path: storybook
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - public
+
+  deploy_ghpages:
+    working_directory: ~/project
+    docker:
+      - image: circleci/node:10.13.0
+    environment:
+      TARGET_BRANCH: gh_pages
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - ""
+      - checkout
+      - attach_workspace:
+          at: ~/project
